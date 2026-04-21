@@ -1,0 +1,86 @@
+{
+  "name": "team-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "start": "npm run build && electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.1",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.8",
+    "wait-on": "^9.0.5"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.5.0",
+    "clsx": "^2.1.1",
+    "electron-is-dev": "^3.0.1",
+    "firebase": "^12.12.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
+    "postcss": "^8.5.10",
+    "python-shell": "^5.0.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2"
+  },
+  "build": {
+    "appId": "com.gridup.teamapp",
+    "productName": "GRiD UP Performance Center",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "splash.html",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bridge/dist/bridge.exe",
+        "to": "bridge/bridge.exe"
+      },
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/icons/icon.png",
+      "artifactName": "GRiD UP Performance Center.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "allowElevation": false,
+      "installerIcon": "assets/icons/icon.png",
+      "uninstallerIcon": "assets/icons/icon.png",
+      "shortcutName": "Grid Up Performance Center",
+      "artifactName": "GridUp_Setup.${ext}"
+    },
+    "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "euBiZaRe",
+        "repo": "GRiD-UP-Center"
+      }
+    ]
+  }
+}

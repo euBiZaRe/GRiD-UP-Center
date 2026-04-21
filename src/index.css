@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0d0d0d;
+  --color-panel: #1a1a1a;
+  --color-accent: #00e5ff;
+  --color-status-success: #00ff88;
+  --color-status-warning: #ffcc00;
+  --color-status-error: #ff3366;
+
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  --font-mono: "JetBrains Mono", "Menlo", "Monaco", "Consolas", "monospace";
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: white;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-panel);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  }
+}
+
+@layer components {
+  .card {
+    background-color: color-mix(in srgb, var(--color-panel) 50%, transparent);
+    border: 1px solid color-mix(in srgb, white 5%, transparent);
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+  
+  .btn-accent {
+    background-color: var(--color-accent);
+    color: black;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+  }
+  .btn-accent:hover {
+    background-color: white;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: color-mix(in srgb, white 60%, transparent);
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .nav-item:hover {
+    color: var(--color-accent);
+    background-color: color-mix(in srgb, white 5%, transparent);
+  }
+
+  .nav-item.active {
+    color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    border-right-width: 2px;
+    border-right-color: var(--color-accent);
+  }
+}
+
+/* Premium Loading System */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-background);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.logo-container {
+  position: relative;
+  width: 320px;
+  margin-bottom: 2rem;
+}
+
+.premium-logo {
+  width: 100%;
+  filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+  animation: logo-reveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes logo-reveal {
+  0% { transform: scale(0.8) rotate(-5deg); opacity: 0; filter: blur(10px); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+}
+
+.logo-shimmer {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 45%,
+    rgba(0, 229, 255, 0.4) 50%,
+    transparent 55%,
+    transparent 100%
+  );
+  background-size: 250% 250%;
+  animation: shimmer-flow 2s infinite ease-in-out;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+@keyframes shimmer-flow {
+  0% { background-position: 200% 200%; }
+  100% { background-position: -100% -100%; }
+}
+
+.loading-bar-container {
+  width: 220px;
+  height: 2px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--color-accent);
+  box-shadow: 0 0 15px var(--color-accent);
+  transform-origin: left;
+  animation: loading-fill 1.5s infinite ease-in-out;
+}
+
+@keyframes loading-fill {
+  0% { transform: scaleX(0) translateX(0); }
+  50% { transform: scaleX(0.5) translateX(100%); }
+  100% { transform: scaleX(0) translateX(200%); }
+}
+
+.loading-text {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.5em;
+  color: #fff;
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-top: 1.5rem;
+  opacity: 0.8;
+  animation: text-pulse 1.5s infinite;
+}
+
+@keyframes text-pulse {
+  0%, 100% { opacity: 0.4; letter-spacing: 0.5em; }
+  50% { opacity: 1; letter-spacing: 0.6em; }
+}

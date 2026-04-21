@@ -1,0 +1,60 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.1.0)
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          npm install
+          pip install pyinstaller firebase-admin pyirsdk
+
+      - name: Inject Firebase Secret
+        shell: bash
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > bridge/serviceAccountKey.json
+
+      - name: Build Python Bridge
+        run: |
+          cd bridge
+          python -m PyInstaller bridge.spec
+
+      - name: Build Web UI
+        run: npm run build
+
+      - name: Build and Publish Electron App
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }} # PAT for cross-repo release
+          CSC_SKIP_SIGNING: true
+        run: |
+          # We use npx electron-builder to build and publish
+          # The artifactName and product name are already in package.json
+          npx electron-builder build --windows --publish always
+        
+      - name: Update Firebase Version Metadata
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          # This script will update the database with the new version and URL
+          # The tag name (e.g. v1.1.0) is available via GITHUB_REF_NAME
+          python scripts/update_firebase.py

@@ -1,0 +1,39 @@
+# Build Artifacts
+dist/
+dist_electron/
+build/
+bin/
+out/
+release/
+
+# Project Specific
+bridge/dist/
+bridge/build/
+bridge/__pycache__/
+*.spec
+
+# Secrets (CRITICAL)
+bridge/serviceAccountKey.json
+.env
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# App Data Fallbacks
+tracks.json
+!assets/tracks.json
