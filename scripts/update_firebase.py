@@ -18,7 +18,7 @@ def update_firebase():
     # 3. Construct Public Download URL
     # Replace 'GRiD-UP-Center' with your PUBLIC releases repository name
     public_repo = "GRiD-UP-Center"
-    file_name = "GRiD%20UP%20Performance%20Center.exe"
+    file_name = "GRiD-UP-Performance-Center.exe"
     download_url = f"https://github.com/euBiZaRe/{public_repo}/releases/download/{tag_name}/{file_name}"
 
     try:

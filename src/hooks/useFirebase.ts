@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, off } from 'firebase/database';
+import { getDatabase, ref, onValue, off, get, child, update } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDBLsyitez6RbP87lL0QAaStn8kotK-B-c",

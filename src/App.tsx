@@ -28,9 +28,10 @@ import Sidebar from './components/Sidebar';
 import PremiumLoader from './components/PremiumLoader';
 import { Download, AlertCircle, X as CloseIcon } from 'lucide-react';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 
 const App = () => {
+  const { isValidated, error: licenseError, machineId } = useLicense();
   const [activePage, setActivePage] = useState('monitor');
   const [activeTeam, setActiveTeam] = useState<string | null>(localStorage.getItem('gridup_active_team'));
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -48,6 +49,15 @@ const App = () => {
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Licensing Guard
+  if (isValidated === null) {
+     return <PremiumLoader text="AUTHENTICATING HARDWARE" />;
+  }
+
+  if (isValidated === false && !isInitialLoad) {
+    return <LicenseScreen />;
+  }
 
   const writePresence = (teamId: string, name: string) => {
     if (!teamId || teamId === 'solo' || teamId === 'gridUp_practice') return;

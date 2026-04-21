@@ -1,9 +1,28 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import isDev from 'electron-is-dev';
 import fs from 'fs';
+import os from 'os';
+
+function getMachineId() {
+  try {
+    if (process.platform === 'win32') {
+      const stdout = execSync('reg query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography" /v MachineGuid').toString();
+      // Parse output format: MachineGuid    REG_SZ    xxxx-xxxx-xxxx
+      const match = stdout.match(/MachineGuid\s+REG_SZ\s+(.+)/);
+      return match ? match[1].trim() : 'unknown-window';
+    } else {
+      // Fallback for non-windows (though we target windows)
+      return os.hostname() || 'unknown-unique';
+    }
+  } catch (e) {
+    console.error('Failed to get machine identification:', e);
+    return 'fallback-id-' + os.hostname();
+  }
+}
+
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = dirname(currentFile);
@@ -140,6 +159,8 @@ app.whenReady().then(() => {
       else win.maximize();
     }
     if (command === 'close') win.close();
+  ipcMain.handle('get-machine-id', async () => {
+    return getMachineId();
   });
 
   createMainWindow();
