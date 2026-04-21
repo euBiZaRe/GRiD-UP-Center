@@ -10,7 +10,6 @@ release/
 bridge/dist/
 bridge/build/
 bridge/__pycache__/
-*.spec
 
 # Secrets (CRITICAL)
 bridge/serviceAccountKey.json
