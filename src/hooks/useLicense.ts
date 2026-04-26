@@ -96,7 +96,7 @@ export const useLicense = () => {
       // No stored data and we haven't activated yet
       setIsValidated(false);
     }
-  }, [machineId, isValidated]);
+  }, [machineId]);
 
   // Initial check
   useEffect(() => {
