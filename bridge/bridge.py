@@ -19,7 +19,7 @@ def is_admin():
     except:
         return False
 
-BRIDGE_VERSION = "1.4.10"
+BRIDGE_VERSION = "1.4.0"
 import re
 import queue
 import irsdk
@@ -297,42 +297,29 @@ def get_telemetry_data(consume=False):
         return None
 
 def simulate_telemetry():
-    """Generates realistic racing telemetry data for fallback."""
-    # ... (Keeping simplified for brevity in this tool call, but ensuring it maintains structure)
+    """Returns a disconnected state when iRacing is not detected."""
     data = {
-        'speed': random.randint(100, 250),
-        'rpm': random.randint(3000, 7000),
-        'gear': 4,
-        'throttle': 10,
-        'brake': 85,
-        'fuel': 55.5,
-        'lap': 12,
-        'position': 5,
-        'gap_ahead': '+1.2',
-        'gap_behind': '-0.8',
-        'track_temp': 28.5,
-        'air_temp': 22.0,
-        'timestamp': time.time(),
-        'abs': False, # Disabled random mock ABS firing
-        'drivers': {
-            "0": {"name": "Sim Driver 1", "progress": 0.1, "isPlayer": True, "classId": 1, "className": "GT3", "classColor": "00e5ff"},
-            "1": {"name": "Sim Driver 2", "progress": 0.15, "isPlayer": False, "classId": 1, "className": "GT3", "classColor": "ffffff"}
-        },
+        'speed': 0,
+        'rpm': 0,
+        'gear': 0,
+        'throttle': 0,
+        'brake': 0,
+        'fuel': 0,
+        'lap': 0,
+        'position': 0,
+        'sid': -1,
         'is_live': False,
         'v': BRIDGE_VERSION
     }
     session = {
-        'active': True,
-        'trackId': 0,
-        'trackName': 'Simulation Circuit',
-        'weather': 'Clear',
-        'laps_remaining': 83,
-        'is_live': False, # Simulation flag
+        'active': False,
+        'sid': -1,
+        'trackName': 'WAITING FOR SIMULATION...',
+        'is_live': False,
         'diag': {
             'status': 'WAITING',
             'msg': 'Waiting for iRacing SDK...',
-            'admin': is_admin(),
-            'error': ''
+            'admin': is_admin()
         }
     }
     return data, session
