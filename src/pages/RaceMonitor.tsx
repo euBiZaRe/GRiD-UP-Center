@@ -283,24 +283,9 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                     <Activity size={16} className="text-white/10" />
                 </div>
                 
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 h-full justify-center">
                    <div className="flex items-center justify-center">
                       <SpeedReadout telemetry={activeTelemetry} settings={settings} convertSpeed={convertSpeed} />
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
-                      <div className="flex flex-col">
-                          <span className="data-label text-status-success/40">Ahead</span>
-                          <span className="text-xl font-black text-status-success italic tracking-tighter">
-                              {activeTelemetry.gap_ahead || '--'}
-                          </span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                          <span className="data-label text-status-error/40">Behind</span>
-                          <span className="text-xl font-black text-status-error italic tracking-tighter">
-                              {activeTelemetry.gap_behind || '--'}
-                          </span>
-                      </div>
                    </div>
                 </div>
              </div>

@@ -728,7 +728,7 @@ def run_bridge():
             # 4. Telemetry Recording (10Hz Sampling)
             if is_on_track:
                 now_ts = time.time()
-                if (now_ts - last_sample_time) >= 0.1: # 10Hz
+                if (now_ts - last_sample_time) >= 0.04: # 25Hz - V1.3.8-ULTRA-SMOOTH
                     sample = {
                         'p': telemetry.get('progress', 0),
                         's': telemetry.get('speed', 0),
