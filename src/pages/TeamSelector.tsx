@@ -84,7 +84,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({ onSelect }) => {
       
       <div className="text-center mb-16">
         <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-4 text-white">
-          <span className="text-accent">GRiD</span> UP Performance Center
+          <span className="text-accent">GRiD</span> UP
         </h1>
         <p className="text-gray-500 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2">
             <Shield size={16} /> Select Active Endurance Team
