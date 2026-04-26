@@ -573,6 +573,8 @@ def run_bridge():
                         print(f"Admin SDK Firebase Edit Error: {e}", flush=True)
 
         sid = -1
+        current_interval = fb_update_interval_racing if ir.is_connected else fb_update_interval_idle
+        
         # Only consume (reset) the accumulator if we are actually pushing to cloud this frame
         should_consume = (loop_start - last_fb_update) >= current_interval
         result = get_telemetry_data(consume=should_consume)
