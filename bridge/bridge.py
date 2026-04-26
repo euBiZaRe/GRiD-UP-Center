@@ -19,7 +19,7 @@ def is_admin():
     except:
         return False
 
-BRIDGE_VERSION = "1.4.0"
+BRIDGE_VERSION = "1.4.1"
 import re
 import queue
 import irsdk
@@ -715,7 +715,7 @@ def run_bridge():
             # 4. Telemetry Recording (10Hz Sampling)
             if is_on_track:
                 now_ts = time.time()
-                if (now_ts - last_sample_time) >= 0.04: # 25Hz - V1.3.8-ULTRA-SMOOTH
+                if (now_ts - last_sample_time) >= 0.016: # 60Hz Native Refresh Rate
                     sample = {
                         'p': telemetry.get('progress', 0),
                         's': telemetry.get('speed', 0),
