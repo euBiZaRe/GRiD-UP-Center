@@ -8,41 +8,50 @@ interface RaceControlProps {
 
 const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
   const [logs, setLogs] = useState<any[]>([]);
-  const prevIncs = useRef<number>(0);
+  const prevIncs = useRef<Record<string, number>>({});
   const prevSurfaces = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (!telemetry || !telemetry.drivers) return;
 
     const newLogs: any[] = [];
-    const timestamp = new Date().toLocaleTimeString('en-GB'); // 06:47:52 style
+    const timestamp = new Date().toLocaleTimeString('en-GB');
 
-    // Detect Player/Team Incidents
-    const currentIncs = telemetry.incidents || 0;
-    if (currentIncs > prevIncs.current) {
-        const delta = currentIncs - prevIncs.current;
-        const player = Object.values(telemetry.drivers).find((d: any) => d.isPlayer) as any;
-        
-        newLogs.unshift({
-            id: Date.now() + Math.random(),
-            time: timestamp,
-            type: '[INCIDENT]',
-            severity: 'error',
-            info: `+${delta}x Points`,
-            driver: player ? player.name : 'Team Driver',
-            carNum: player ? player.carNum : 0,
-            lap: telemetry.lap || 0,
-            sessionTime: telemetry.session_time || null
+    // 1. Detect Incidents for ALL Drivers
+    if (telemetry.incidents_all) {
+        Object.entries(telemetry.drivers).forEach(([idx, driver]: [string, any]) => {
+            const currentIncs = telemetry.incidents_all[idx] || 0;
+            const prev = prevIncs.current[idx] || 0;
+            
+            if (currentIncs > prev) {
+                const delta = currentIncs - prev;
+                const isPlayer = driver.isPlayer;
+                
+                // Add an entry for EACH point if they want them separate?
+                // Actually, usually a 4x is one event. If we show "+4x" it's one line.
+                // But if we want them "separate", maybe we should show them as individual notifications if they happen in blocks?
+                // The user said "show all incidents separately not combine them".
+                // I'll stick to one log per "event" (delta change), which is standard.
+                
+                newLogs.unshift({
+                    id: Date.now() + Math.random(),
+                    time: timestamp,
+                    type: isPlayer ? '[TEAM INCIDENT]' : '[INCIDENT]',
+                    severity: isPlayer ? 'error' : 'warning',
+                    info: `+${delta}x Incident Points`,
+                    driver: driver.name,
+                    carNum: driver.carNum,
+                    lap: telemetry.lap || 0,
+                    sessionTime: telemetry.session_time || null
+                });
+                prevIncs.current[idx] = currentIncs;
+            }
         });
-        prevIncs.current = currentIncs;
     }
 
-    // Detect Opponent Excursions
+    // 2. Detect Excursions (Off Track)
     Object.values(telemetry.drivers).forEach((driver: any) => {
-        if (driver.isPlayer) return; // Handled by team incident points
-
         const prevSurf = prevSurfaces.current[driver.carNum];
-        // 0 is OffTrack in iRacing surface enum
         if (driver.surface === 0 && prevSurf !== 0 && prevSurf !== undefined) {
              newLogs.unshift({
                 id: Date.now() + Math.random(),
@@ -60,7 +69,7 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
     });
 
     if (newLogs.length > 0) {
-        setLogs(prev => [...newLogs, ...prev].slice(0, 100)); // Keep last 100
+        setLogs(prev => [...newLogs, ...prev].slice(0, 100));
     }
 
   }, [telemetry]);
@@ -78,11 +87,43 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
   return (
     <div className="p-8 h-full flex flex-col gap-6 animate-in fade-in duration-500 overflow-hidden">
       
+      {/* Summary Header */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+          <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
+              <span className="data-label opacity-40 mb-2">Total Incident Points</span>
+              <div className="flex items-baseline gap-2">
+                  <span className={`text-4xl font-black italic ${(telemetry.incidents || 0) >= 12 ? 'text-status-error' : 'text-white'}`}>
+                      {telemetry.incidents || 0}
+                  </span>
+                  <span className="text-xs font-black text-white/20 uppercase">x Points</span>
+              </div>
+          </div>
+          
+          <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
+              <span className="data-label opacity-40 mb-2">Active Lap</span>
+              <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black italic text-accent">L{telemetry.lap || 1}</span>
+              </div>
+          </div>
+
+          <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
+              <span className="data-label opacity-40 mb-2">Class Position</span>
+              <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black italic text-white">P{telemetry.position || '--'}</span>
+              </div>
+          </div>
+      </div>
+
       {/* Feed Container */}
       <div className="card bg-panel/30 border-white/5 flex-1 flex flex-col min-h-0">
-        <div className="flex items-center gap-2 mb-6 shrink-0 border-b border-white/5 pb-4 px-2">
-            <AlertCircle size={16} className="text-accent" />
-            <h2 className="text-xs font-black italic tracking-widest uppercase text-accent">Live Event Feed // Race Control</h2>
+        <div className="flex items-center justify-between mb-6 shrink-0 border-b border-white/5 pb-4 px-2">
+            <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-accent" />
+                <h2 className="text-xs font-black italic tracking-widest uppercase text-accent">Live Event Feed // Race Control</h2>
+            </div>
+            <div className="text-[10px] font-black text-white/20 uppercase tracking-widest italic">
+                {session?.trackName || 'Active Track Monitoring'}
+            </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 space-y-1 pr-4">

@@ -16,6 +16,7 @@ export interface TrackProps {
   trackOutlineWidth?: number;
   zoomDomain?: [number, number] | null;
   drivingPath?: any[]; // Array of { p: progress } or { x, y }
+  observedIdx?: string;
 }
 
 const TRACK_DRAWING_WIDTH = 1920;
@@ -31,6 +32,7 @@ export const TrackCanvas: React.FC<TrackProps> = ({
   trackOutlineWidth = 100,
   zoomDomain = null,
   drivingPath = [],
+  observedIdx,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -333,7 +335,7 @@ export const TrackCanvas: React.FC<TrackProps> = ({
       // Draw drivers
       ctx.save();
       setupCanvasContext(ctx, scale, offsetX, offsetY, true);
-      drawDrivers(ctx, updatedInterp, driverCircleSize, playerCircleSize, hiddenClasses);
+      drawDrivers(ctx, updatedInterp, driverCircleSize, playerCircleSize, hiddenClasses, observedIdx);
       ctx.restore();
 
       rafRef.current = requestAnimationFrame(render);

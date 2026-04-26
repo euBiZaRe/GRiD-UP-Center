@@ -197,6 +197,12 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
 
   const springConfig = { stiffness: 150, damping: 25, mass: 1 };
 
+  const observedIdx = useMemo(() => {
+    if (!watchedDriver || !telemetry?.drivers) return undefined;
+    const entry = Object.entries(telemetry.drivers).find(([_, d]: [string, any]) => d.carNum === watchedDriver.carNum);
+    return entry ? entry[0] : undefined;
+  }, [watchedDriver, telemetry?.drivers]);
+
   return (
     <div className="p-8 h-full flex flex-col gap-8 animate-reveal overflow-y-auto">
       {/* Header Info */}
@@ -224,7 +230,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                 <Eye size={20} />
             </div>
             <div>
-                <span className="data-label text-accent/50 block">Observing Unit</span>
+                <span className="data-label text-accent/50 block">Observing</span>
                 <span className="text-lg font-black text-white italic">{watchedDriver.name}</span>
             </div>
             <button onClick={onStopWatching} className="ml-4 p-2 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all">
@@ -236,29 +242,44 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
 
       <div className="flex-1 flex flex-col xl:grid xl:grid-cols-12 gap-8 min-h-0">
         {/* Primary Dashboard (Left) */}
-        <div className="xl:col-span-8 flex flex-col gap-8">
+        <div className="xl:col-span-7 flex flex-col gap-8">
           
           {/* Main Instrumentation */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
              {/* Intelligence Card */}
              <div className="card p-8 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-8">
-                    <span className="text-[10px] font-black tracking-[0.3em] text-white/20 uppercase italic">Intelligence Core</span>
+                    <span className="text-[10px] font-black tracking-[0.3em] text-white/20 uppercase italic">Session Stats</span>
                     <Trophy size={16} className="text-accent/40" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-y-8">
-                    <IntelligenceCard label="Rank" value={`P${activeTelemetry.position || '--'}`} icon={Trophy} colorClass="text-accent" />
+                    <IntelligenceCard label="Position" value={`P${activeTelemetry.position || '--'}`} icon={Trophy} colorClass="text-accent" />
                     <IntelligenceCard label="Lap" value={activeTelemetry.lap || '0'} icon={FastForward} />
                     <IntelligenceCard label="Personal Best" value={times.best} icon={Gauge} colorClass="text-accent/60" />
-                    <IntelligenceCard label="Interval" value={activeTelemetry.gap_ahead || '--'} icon={Timer} />
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Timer size={12} className="text-white/20" />
+                            <span className="data-label">Relatives</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-status-success uppercase opacity-40">Ahead</span>
+                                <span className="text-lg font-black italic text-status-success leading-none">{activeTelemetry.gap_ahead || '--'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-status-error uppercase opacity-40">Behind</span>
+                                <span className="text-lg font-black italic text-status-error leading-none">{activeTelemetry.gap_behind || '--'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
              </div>
 
              {/* Speed & Gaps Card */}
              <div className="card p-8 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-8">
-                    <span className="text-[10px] font-black tracking-[0.3em] text-white/20 uppercase italic">Velocity Core</span>
+                    <span className="text-[10px] font-black tracking-[0.3em] text-white/20 uppercase italic">Info</span>
                     <Activity size={16} className="text-white/10" />
                 </div>
                 
@@ -304,8 +325,8 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
         </div>
 
         {/* Safety & Track (Right) */}
-        <div className="xl:col-span-4 flex flex-col gap-8">
-           <div className="card flex-1 flex flex-col min-h-[400px]">
+        <div className="xl:col-span-5 flex flex-col gap-8">
+           <div className="card flex-1 flex flex-col min-h-[500px]">
               <div className="p-4 flex justify-between items-center border-b border-white/5 bg-white/[0.01]">
                 <div className="flex items-center gap-2">
                     <Shield size={14} className="text-accent" />
@@ -325,6 +346,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                     trackId={session?.trackId} 
                     drivers={activeTelemetry.drivers || {}} 
                     hiddenClasses={hiddenClasses}
+                    observedIdx={observedIdx}
                   />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-white/10 italic">

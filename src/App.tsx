@@ -13,7 +13,7 @@ import {
   Square
 } from 'lucide-react';
 
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.3.6';
 import { useFirebase } from './hooks/useFirebase';
 import { db } from './hooks/useFirebase';
 import { ref, set, update } from 'firebase/database';
@@ -33,6 +33,7 @@ import Sidebar from './components/Sidebar';
 import PremiumLoader from './components/PremiumLoader';
 import { Download, AlertCircle, X } from 'lucide-react';
 import { useVideoRecorder } from './hooks/useVideoRecorder';
+import { useFuelTracker } from './hooks/useFuelTracker';
 
 // --- Diagnostic Error Boundary ---
 class SafeModeBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -86,6 +87,7 @@ const AppContent = () => {
   const { telemetry, session, drivers, setups, history, appConfig, isOffline } = useFirebase(activeTeam, watchedDriver?.id);
   const { settings } = useSettings();
   const { isRecording, startRecording, stopRecording, bestLapVideoUrl, bestLapTime } = useVideoRecorder(telemetry);
+  const fuelTracking = useFuelTracker(telemetry);
 
   const getAccentColor = () => {
     if (settings.theme === 'CUSTOM') return settings.customColor;
@@ -194,7 +196,7 @@ const AppContent = () => {
     switch (activePage) {
       case 'monitor': return <RaceMonitor telemetry={telemetry} session={session} watchedDriver={watchedDriver} onStopWatching={() => setWatchedDriver(null)} />;
       case 'lobby': return <TeamLobby drivers={drivers} onSwitchTeam={handleEject} onWatchDriver={(d) => { setWatchedDriver(d); setActivePage('monitor'); }} machineId={machineId} />;
-      case 'fuel': return <FuelStrategy telemetry={telemetry} session={session} />;
+      case 'fuel': return <FuelStrategy telemetry={telemetry} session={session} fuelTracking={fuelTracking} />;
       case 'stint': return <StintManager telemetry={telemetry} session={session} drivers={drivers} history={history} />;
       case 'health': return <CarHealth telemetry={telemetry} session={session} />;
       case 'control': return <RaceControl telemetry={telemetry} session={session} />;

@@ -70,23 +70,31 @@ export const drawDrivers = (
   calculatePositions: any,
   driverCircleSize: number,
   playerCircleSize: number,
-  hiddenClasses: Set<number>
+  hiddenClasses: Set<number>,
+  observedIdx?: string
 ) => {
-  Object.values(calculatePositions)
-    .sort((a: any, b: any) => Number(a.isPlayer) - Number(b.isPlayer))
-    .forEach(({ driver, position, isPlayer, classId }: any) => {
+  Object.entries(calculatePositions)
+    .sort((a: any, b: any) => Number(a[1].isPlayer) - Number(b[1].isPlayer))
+    .forEach(([idx, { driver, position, isPlayer, classId }]: [string, any]) => {
       // Filtering: If this class is explicitly hidden, skip drawing
       if (hiddenClasses.has(classId)) return;
 
-      const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
+      const isObserved = idx === observedIdx;
+      const circleRadius = (isPlayer || isObserved) ? playerCircleSize : driverCircleSize;
       
-      ctx.fillStyle = isPlayer ? '#00e5ff' : '#ffffff';
-      if (driver.classColor) {
+      // Base Color Logic
+      if (isObserved) {
+        ctx.fillStyle = '#ffcc00'; // Vibrant Yellow for Observed
+      } else if (isPlayer) {
+        ctx.fillStyle = '#00e5ff'; // Cyan for Player
+      } else if (driver.classColor) {
         ctx.fillStyle = `#${driver.classColor}`;
+      } else {
+        ctx.fillStyle = '#ffffff';
       }
       
-      // Highlight player with a border
-      if (isPlayer) {
+      // Highlight observed or player with a border
+      if (isPlayer || isObserved) {
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 8;
           ctx.beginPath();
@@ -101,7 +109,11 @@ export const drawDrivers = (
       // Car Number
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = ctx.fillStyle === '#ffffff' ? '#000000' : '#ffffff';
+      
+      // Dynamic text color for contrast
+      const isLightColor = isObserved || isPlayer || (driver.classColor === 'ffffff');
+      ctx.fillStyle = isLightColor ? '#000000' : '#ffffff';
+      
       ctx.font = `bold ${circleRadius * 1.2}px Inter, sans-serif`;
       ctx.fillText(driver.carNum || '', position.x, position.y);
     });

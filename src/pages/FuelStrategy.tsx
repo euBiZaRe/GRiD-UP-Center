@@ -5,50 +5,17 @@ import { useSettings } from '../hooks/useSettings';
 interface FuelStrategyProps {
   telemetry: any;
   session: any;
+  fuelTracking: any;
 }
 
-const FuelStrategy: React.FC<FuelStrategyProps> = ({ telemetry, session }) => {
+const FuelStrategy: React.FC<FuelStrategyProps> = ({ telemetry, session, fuelTracking }) => {
   const { settings, convertLiquid } = useSettings();
-
-  // --- Fuel Intelligence State ---
-  const [fuelHistory, setFuelHistory] = React.useState<number[]>(() => {
-    const saved = localStorage.getItem('gridup_fuel_history');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [lastLap, setLastLap] = React.useState(telemetry?.lap || 0);
-  const [fuelAtStartOfLap, setFuelAtStartOfLap] = React.useState(telemetry?.fuel || 0);
-
-  // Track fuel consumption per lap
-  React.useEffect(() => {
-    if (!telemetry?.lap || !telemetry?.fuel) return;
-
-    // Detect New Lap
-    if (telemetry.lap > lastLap) {
-      const consumption = fuelAtStartOfLap - telemetry.fuel;
-      
-      // Safety check: Consumption must be realistic (e.g., > 0 and < 10L per lap)
-      if (consumption > 0.1 && consumption < 15) {
-        const newHistory = [consumption, ...fuelHistory].slice(0, 20); // Keep last 20 laps
-        setFuelHistory(newHistory);
-        localStorage.setItem('gridup_fuel_history', JSON.stringify(newHistory));
-      }
-
-      setLastLap(telemetry.lap);
-      setFuelAtStartOfLap(telemetry.fuel);
-    }
-
-    // Handle session reset (lap goes back to 1 or 0)
-    if (telemetry.lap < lastLap && telemetry.lap > 0) {
-      setLastLap(telemetry.lap);
-      setFuelAtStartOfLap(telemetry.fuel);
-    }
-  }, [telemetry?.lap, telemetry?.fuel, fuelHistory, lastLap, fuelAtStartOfLap]);
+  const { fuelHistory, fuelAtStartOfLap, resetHistory } = fuelTracking;
 
   // Calculate dynamic average
   const currentAvg = useMemo(() => {
     if (fuelHistory.length === 0) return 3.80; // Default fallback
-    const sum = fuelHistory.reduce((a, b) => a + b, 0);
+    const sum = fuelHistory.reduce((a: number, b: number) => a + b, 0);
     return sum / fuelHistory.length;
   }, [fuelHistory]);
 
@@ -66,11 +33,6 @@ const FuelStrategy: React.FC<FuelStrategyProps> = ({ telemetry, session }) => {
 
   const estimatedLaps = fuelInTank > 0 ? (fuelInTank / currentAvg) : 0;
   const currentLapsInt = Math.floor(estimatedLaps);
-
-  const resetHistory = () => {
-    setFuelHistory([]);
-    localStorage.removeItem('gridup_fuel_history');
-  };
 
   const generateSaveMatrix = () => {
     if (fuelInTank <= 0) return [];

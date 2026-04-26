@@ -1253,7 +1253,7 @@ const DataHub: React.FC<DataHubProps> = ({ activeTeam, telemetry, session, video
         {(selectedLapNum === null && referenceTrace.length === 0) ? <div className="flex-1 flex items-center justify-center text-white/20 uppercase font-black tracking-widest">Select Lap</div> : TelemetryCharts}
       </div>
 
-      <div className="w-80 border-l border-white/5 flex flex-col bg-panel/30 backdrop-blur-xl p-6 space-y-6">
+      <div className="w-80 border-l border-white/5 flex flex-col bg-panel/30 backdrop-blur-xl p-6 space-y-6 overflow-y-auto custom-scrollbar">
         {videoUrl ? (
           <div 
             className="rounded-2xl border border-white/5 overflow-hidden bg-black/40 shadow-xl relative group cursor-pointer"
@@ -1409,13 +1409,13 @@ const DataHub: React.FC<DataHubProps> = ({ activeTeam, telemetry, session, video
             </div>
         </div>
         {sectorTimes && (
-            <div className="bg-white/2 p-6 rounded-2xl border border-white/5">
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4">Sector Analysis</span>
-                <div className="space-y-3">
+            <div className="bg-white/2 p-4 rounded-2xl border border-white/5 flex flex-col min-h-0">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4 shrink-0">Sector Analysis</span>
+                <div className="space-y-1.5 overflow-y-auto pr-2 custom-scrollbar max-h-[280px]">
                     {sectorTimes.map((t, i) => (
-                        <div key={i} className="flex justify-between items-center">
-                            <span className="text-[9px] font-black text-gray-500">SECTOR {i+1}</span>
-                            <span className="text-sm font-black italic text-white tracking-tighter">{formatTime(t)}</span>
+                        <div key={i} className="flex justify-between items-center py-1.5 border-b border-white/[0.02] last:border-0">
+                            <span className="text-[8px] font-black text-gray-500 uppercase">Sector {i+1}</span>
+                            <span className="text-xs font-black italic text-white tracking-tighter">{formatTime(t)}</span>
                         </div>
                     ))}
                 </div>
