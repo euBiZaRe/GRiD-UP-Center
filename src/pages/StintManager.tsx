@@ -30,10 +30,10 @@ const StintManager: React.FC<StintManagerProps> = ({ telemetry, session, drivers
   // Parse History Sessions
   const historySessions = history ? Object.entries(history).map(([id, data]: [string, any]) => ({
       id,
-      ...data.metadata,
-      lapCount: data.laps ? Object.keys(data.laps).length : 0,
-      laps: data.laps || {},
-      stints: data.stints || {}
+      ...(data?.metadata || {}),
+      lapCount: data?.laps ? Object.keys(data.laps).length : 0,
+      laps: data?.laps || {},
+      stints: data?.stints || {}
   })).sort((a,b) => (b.startTime || 0) - (a.startTime || 0)) : [];
 
   const selectedSession = selectedSessionId ? historySessions.find(s => s.id === selectedSessionId) : null;
@@ -46,11 +46,20 @@ const StintManager: React.FC<StintManagerProps> = ({ telemetry, session, drivers
       ? Object.entries(history[activeSessionId].stints).map(([id, s]: [string, any]) => ({ id, ...s }))
           .sort((a,b) => b.timestamp - a.timestamp) : [];
 
-  // Team High Scores (Fastest Laps)
-  const teamFastestLaps = drivers.map(d => ({
-    name: d.name,
-    time: d.fastestLap || "--:--.---"
-  }));
+  // Filter out stale, empty, or generic system drivers for the Hall of Fame
+  const teamFastestLaps = drivers
+    .filter(d => {
+      const name = d.name?.toLowerCase() || '';
+      if (name.includes('sim driver 1') || name.includes('unknown driver')) return false;
+      
+      const hasTime = d.fastestLap && d.fastestLap !== "--:--.---";
+      const isRecent = d.lastSeen && (Date.now() - d.lastSeen < 24 * 60 * 60 * 1000);
+      return hasTime || isRecent;
+    })
+    .map(d => ({
+      name: d.name,
+      time: d.fastestLap || "--:--.---"
+    }));
 
   if (teamFastestLaps.length === 0) {
       const player = Object.values(telemetry?.drivers || {}).find((d: any) => d.isPlayer);

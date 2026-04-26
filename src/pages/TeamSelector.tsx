@@ -29,12 +29,12 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({ onSelect }) => {
       if (!data) return;
 
       const newCounts: Record<string, number> = {};
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
 
       Object.entries(data).forEach(([teamId, teamData]: [string, any]) => {
-        if (teamData.drivers) {
-          const onlineCount = Object.values(teamData.drivers).filter((d: any) => 
-            d.status === 'online' && (d.lastActive || 0) > fiveMinutesAgo
+        if (teamData?.drivers) {
+          const onlineCount = Object.values(teamData.drivers || {}).filter((d: any) => 
+            d && (d.status === 'online' || d.online !== false) && (d.lastActive || 0) > fifteenMinutesAgo
           ).length;
           newCounts[teamId] = onlineCount;
         } else {

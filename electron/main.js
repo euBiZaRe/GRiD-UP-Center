@@ -1,4 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, desktopCapturer, session } from 'electron';
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { spawn, execSync } from 'child_process';
@@ -6,33 +8,79 @@ import isDev from 'electron-is-dev';
 import fs from 'fs';
 import os from 'os';
 
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+// Configure AutoUpdater
+autoUpdater.autoDownload = true;
+autoUpdater.allowPrerelease = false;
+
+function setupAutoUpdater(win) {
+  if (isDev) return; 
+
+  autoUpdater.on('checking-for-update', () => {
+    win.webContents.send('checking-for-update');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    win.webContents.send('update-available', info.version);
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    win.webContents.send('update-not-available', info.version);
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    win.webContents.send('update-progress', Math.round(progressObj.percent));
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    win.webContents.send('update-ready');
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Update Error:', err);
+    win.webContents.send('update-error', err.message);
+  });
+
+  autoUpdater.checkForUpdatesAndNotify();
+  setInterval(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 60 * 60 * 1000);
+}
+
 function getMachineId() {
   try {
     if (process.platform === 'win32') {
       const stdout = execSync('reg query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography" /v MachineGuid').toString();
-      // Parse output format: MachineGuid    REG_SZ    xxxx-xxxx-xxxx
       const match = stdout.match(/MachineGuid\s+REG_SZ\s+(.+)/);
-      return match ? match[1].trim() : 'unknown-window';
+      return match ? match[1].trim().toUpperCase() : 'unknown-window';
     } else {
-      // Fallback for non-windows (though we target windows)
-      return os.hostname() || 'unknown-unique';
+      return (os.hostname() || 'unknown-unique').toUpperCase();
     }
   } catch (e) {
     console.error('Failed to get machine identification:', e);
-    return 'fallback-id-' + os.hostname();
+    return ('fallback-id-' + os.hostname()).toUpperCase();
   }
 }
-
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = dirname(currentFile);
 
 let tracksData = null;
-const tracksPath = join(currentDir, '../assets/tracks.json');
 
 function loadTracks() {
   try {
-    // In production, assets are in the resources folder
     const tracksPath = isDev 
       ? join(currentDir, '../assets/tracks.json')
       : join(process.resourcesPath, 'assets/tracks.json');
@@ -83,6 +131,9 @@ function createMainWindow() {
   });
 
   mainWindow.setMenu(null);
+  
+  // Activate Auto-Updater
+  setupAutoUpdater(mainWindow);
 
   const url = isDev 
     ? 'http://localhost:3000' 
@@ -91,7 +142,6 @@ function createMainWindow() {
   mainWindow.loadURL(url);
 
   mainWindow.once('ready-to-show', () => {
-    // Artificial minimum delay for splash screen aesthetics
     setTimeout(() => {
       if (splashWindow) splashWindow.close();
       mainWindow.show();
@@ -107,41 +157,70 @@ function createMainWindow() {
 }
 
 function startBridge() {
-  let bridgeProcess;
-  
+  let proc;
   if (isDev) {
     const bridgePath = join(currentDir, '../bridge/bridge.py');
     console.log("Starting Python Bridge (Dev):", bridgePath);
-    bridgeProcess = spawn('python', [bridgePath]);
+    proc = spawn('python', [bridgePath]);
   } else {
     const bridgePath = join(process.resourcesPath, 'bridge/bridge.exe');
     console.log("Starting Compiled Bridge (Prod):", bridgePath);
-    bridgeProcess = spawn(bridgePath);
+    proc = spawn(bridgePath);
   }
 
-  bridgeProcess.stdout.on('data', (data) => {
-    console.log(`Bridge: ${data}`);
+  proc.stdout.on('data', (data) => {
     if (mainWindow) mainWindow.webContents.send('bridge-status', data.toString());
   });
 
-  bridgeProcess.stderr.on('data', (data) => {
-    console.error(`Bridge Error: ${data}`);
-  });
-
-  bridgeProcess.on('close', (code) => {
-    console.log(`Bridge process exited with code ${code}`);
-  });
-
-  return bridgeProcess;
+  return proc;
 }
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'display-capture') {
+      callback(true);
+    } else {
+      callback(true); // Allow other generic permissions for now
+    }
+  });
+
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['window', 'screen'] }).then((sources) => {
+      // Auto-detect iRacing to save the user from a popup picker
+      const iracingWindow = sources.find(s => s.name.toLowerCase().includes('iracing'));
+      if (iracingWindow) {
+        callback({ video: iracingWindow });
+      } else {
+        const primaryScreen = sources.find(s => s.id.startsWith('screen'));
+        callback({ video: primaryScreen || sources[0] });
+      }
+    }).catch(err => {
+      console.error('desktopCapturer error', err);
+      callback(null);
+    });
+  });
+
   loadTracks();
   createSplashWindow();
 
   ipcMain.handle('get-track-data', async (event, trackId) => {
     if (!tracksData) return null;
     return tracksData[trackId] || null;
+  });
+
+  ipcMain.handle('save-video', async (event, { arrayBuffer, fileName }) => {
+    try {
+      const buffer = Buffer.from(arrayBuffer);
+      const videoDir = join(os.homedir(), 'Videos', 'GridUp');
+      if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
+      
+      const filePath = join(videoDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      return filePath;
+    } catch (e) {
+      console.error("Failed to save video:", e);
+      return null;
+    }
   });
 
   ipcMain.on('bridge-command', (event, cmd) => {
@@ -159,8 +238,18 @@ app.whenReady().then(() => {
       else win.maximize();
     }
     if (command === 'close') win.close();
+  });
+  
   ipcMain.handle('get-machine-id', async () => {
     return getMachineId();
+  });
+
+  ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.on('check-for-updates', () => {
+    autoUpdater.checkForUpdatesAndNotify();
   });
 
   createMainWindow();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSettings, SpeedUnit, TempUnit, PressUnit, LiquidUnit } from '../hooks/useSettings';
-import { Settings as SettingsIcon, Gauge, Thermometer, Wind, Beaker, User } from 'lucide-react';
+import { useSettings, SpeedUnit, TempUnit, PressUnit, LiquidUnit, PRESET_THEMES } from '../hooks/useSettings';
+import { Settings as SettingsIcon, Gauge, Thermometer, Wind, Beaker, User, Activity, RefreshCw } from 'lucide-react';
 
 const UnitToggle = ({ 
   title, 
@@ -70,6 +70,15 @@ const Settings: React.FC = () => {
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Global Telemetry Unit Configuration</span>
           </div>
         </div>
+        <button
+            onClick={() => {
+                if ((window as any).electron) (window as any).electron.send('check-for-updates');
+            }}
+            className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group active:scale-95 shadow-lg"
+        >
+            <RefreshCw size={16} className="text-accent group-hover:rotate-180 transition-transform duration-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Check for Updates</span>
+        </button>
       </div>
 
       <div className="flex flex-col gap-4 max-w-4xl">
@@ -145,6 +154,108 @@ const Settings: React.FC = () => {
             currentValue={settings.liquidUnit}
             onSelect={(val) => updateSetting('liquidUnit', val as LiquidUnit)}
           />
+
+          {/* Visual Aesthetic */}
+          <div className="card bg-panel/30 border border-white/5 p-6 rounded-xl space-y-6">
+              <div className="flex items-center gap-4">
+                  <div className="p-3 bg-black/40 rounded-lg">
+                      <Wind className="text-accent" size={24} />
+                  </div>
+                  <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">Visual Aesthetic</h3>
+                      <p className="text-[10px] text-gray-500 font-bold tracking-wider">Customize the application primary color scheme</p>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {PRESET_THEMES.map((theme) => (
+                      <button
+                          key={theme.id}
+                          onClick={() => updateSetting('theme', theme.id)}
+                          className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all group ${
+                              settings.theme === theme.id 
+                              ? 'bg-accent/10 border-accent shadow-[0_0_15px_color-mix(in srgb,var(--color-accent)_20%,transparent)]' 
+                              : 'bg-black/40 border-white/5 hover:border-white/20'
+                          }`}
+                      >
+                          <div 
+                              className="w-full h-8 rounded-lg shadow-inner flex items-center justify-center"
+                              style={{ backgroundColor: theme.id === 'CUSTOM' ? settings.customColor : theme.color }}
+                          >
+                              {settings.theme === theme.id && (
+                                  <div className="w-2 h-2 bg-black rounded-full" />
+                              )}
+                          </div>
+                      <span className={`text-[10px] uppercase font-black tracking-widest ${
+                          settings.theme === theme.id ? 'text-accent' : 'text-gray-500 group-hover:text-white'
+                      }`}>
+                          {theme.name}
+                      </span>
+                  </button>
+                  ))}
+              </div>
+
+              {/* Custom Color Chart */}
+              {settings.theme === 'CUSTOM' && (
+                  <div className="pt-6 border-t border-white/5 flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-black/40 rounded-lg">
+                            <Activity className="text-accent" size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-white font-black uppercase tracking-widest leading-none">Custom Accent Color</p>
+                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mt-1">Pick a specific team livery color</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                          <span className="text-xs font-mono text-accent font-bold">{settings.customColor.toUpperCase()}</span>
+                          <input 
+                              type="color"
+                              value={settings.customColor}
+                              onChange={(e) => updateSetting('customColor', e.target.value)}
+                              className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 p-1 cursor-crosshair overflow-hidden"
+                          />
+                      </div>
+                  </div>
+              )}
+          </div>
+
+          {/* Bridge Diagnostic Console */}
+          <div className="card bg-panel/30 border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <div className="p-3 bg-black/40 rounded-lg">
+                          <Activity className="text-accent" size={24} />
+                      </div>
+                      <div>
+                          <h3 className="text-sm font-black uppercase tracking-widest text-white">Bridge Diagnostic Console</h3>
+                          <p className="text-[10px] text-gray-500 font-bold tracking-wider">Real-time status updates from the telemetry bridge</p>
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 italic">Listening for heartbeats...</span>
+                  </div>
+              </div>
+
+              <div className="bg-black/60 rounded-xl p-4 h-64 overflow-y-auto font-mono text-[10px] space-y-1 custom-scrollbar border border-white/5 shadow-inner">
+                  {(window as any).bridgeLogs?.length > 0 ? (
+                      (window as any).bridgeLogs.map((log: string, i: number) => (
+                          <div key={i} className="flex gap-4 group">
+                              <span className="text-gray-700 select-none w-8 text-right">{i + 1}</span>
+                              <span className={log.includes('Error') ? 'text-status-error' : log.includes('Sync') || log.includes('🏁') ? 'text-accent font-bold' : 'text-gray-400 group-hover:text-gray-200'}>
+                                  {log}
+                              </span>
+                          </div>
+                      ))
+                  ) : (
+                      <div className="h-full flex items-center justify-center text-gray-800 uppercase font-black tracking-widest">
+                          No bridge activity detected. Ensure bridge.exe is running.
+                      </div>
+                  )}
+              </div>
+              <p className="text-[9px] text-gray-600 italic">Note: Only the last 500 lines are stored in volatile memory.</p>
+          </div>
       </div>
     </div>
   );

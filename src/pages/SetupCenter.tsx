@@ -64,6 +64,30 @@ const IRACING_TRACKS = [
     "Zolder"
 ].sort();
 
+const IRACING_CARS = [
+    { id: "ferrari296gt3", name: "Ferrari 296 GT3" },
+    { id: "porsche911gt3r2", name: "Porsche 911 GT3 R (992)" },
+    { id: "mercedesamggt32020", name: "Mercedes-AMG GT3 2020" },
+    { id: "bmwm4gt3", name: "BMW M4 GT3" },
+    { id: "lamborghinievogt3", name: "Lamborghini Huracán GT3 EVO" },
+    { id: "audi r8 lms gt3", name: "Audi R8 LMS GT3 EVO II" },
+    { id: "mclarenmp412cgt3", name: "McLaren MP4-12C GT3" },
+    { id: "fordgt_gt3", name: "Ford GT GT3" },
+    { id: "dallarap217", name: "Dallara P217 (LMP2)" },
+    { id: "cadillacvseriesr", name: "Cadillac V-Series.R (GTP)" },
+    { id: "porsche963", name: "Porsche 963 (GTP)" },
+    { id: "acuraxar06", name: "Acura ARX-06 (GTP)" },
+    { id: "bmwmhybridv8", name: "BMW M Hybrid V8 (GTP)" },
+    { id: "mazdamx5", name: "Global Mazda MX-5 Cup" },
+    { id: "toyota86", name: "Toyota GR86" },
+    { id: "formula4", name: "FIA Formula 4" },
+    { id: "formula3", name: "Dallara F3" },
+    { id: "formula2", name: "Super Formula SF23" },
+    { id: "dallarair01", name: "Dallara iR-01" },
+    { id: "formulavee", name: "Formula Vee" },
+    { id: "ff1600", name: "Ray FF1600" }
+].sort((a,b) => a.name.localeCompare(b.name));
+
 interface SetupCenterProps {
   setups: any[];
   activeTeam: string;
@@ -77,6 +101,9 @@ const SetupCenter: React.FC<SetupCenterProps> = ({ setups, activeTeam, session, 
   const [injectedSetupId, setInjectedSetupId] = useState<string | null>(null);
   const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
   const [editTrackValue, setEditTrackValue] = useState('');
+  const [manualCarId, setManualCarId] = useState<string | null>(null);
+  const [carSearchQuery, setCarSearchQuery] = useState('');
+  const [showCarPicker, setShowCarPicker] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +115,13 @@ const SetupCenter: React.FC<SetupCenterProps> = ({ setups, activeTeam, session, 
   const getPlayerName = () => {
       const p = Object.values(telemetry?.drivers || {}).find((d: any) => d.isPlayer);
       return (p as any)?.name || 'Local Driver';
+  };
+
+  const getTargetCarId = () => {
+      if (manualCarId) return manualCarId;
+      return telemetry?.drivers?.[telemetry?.playerIdx || '']?.carPath 
+          || Object.values(telemetry?.drivers || {}).find((d: any) => d.isPlayer)?.carPath 
+          || '';
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,6 +158,7 @@ const SetupCenter: React.FC<SetupCenterProps> = ({ setups, activeTeam, session, 
                     author: getPlayerName(),
                     size: file.size,
                     targetTrack: session?.trackName || 'Generic Track',
+                    targetCar: getTargetCarId(),
                     base64: base64Data
                 });
                 
@@ -246,23 +281,69 @@ const SetupCenter: React.FC<SetupCenterProps> = ({ setups, activeTeam, session, 
                 <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 max-w-[80%]">
                     Drag and drop your iRacing <span className="text-accent">.sto</span> file here or click to browse. It will be globally instantly synchronized to Team Cloud.
                 </p>
+            </div>
 
-                {/* System Diagnostics Output */}
-                <div className="absolute bottom-0 left-0 w-full p-3 bg-black/40 border-t border-white/5 flex justify-between items-center text-[8px] font-bold tracking-widest uppercase text-gray-500">
-                    <span className="flex items-center gap-2">
-                        <HardDrive size={10} /> Active Target Node
-                    </span>
-                    <span className={activeCarPath ? "text-accent" : "text-status-warning"}>
-                        {activeCarPath || "UNKNOWN (Manual Override)"}
+            {/* Target Car Configuration (Moved Outside to prevent click conflicts) */}
+            <div className="bg-panel/40 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Target Car Configuration</span>
+                    <button 
+                        onClick={() => { setManualCarId(null); setCarSearchQuery(''); }}
+                        className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-all ${!manualCarId ? 'bg-accent/20 text-accent' : 'bg-white/5 text-gray-600 hover:text-white'}`}
+                    >
+                        Auto-Link
+                    </button>
+                </div>
+
+                <div className="relative">
+                    <input 
+                        type="text"
+                        placeholder={manualCarId ? IRACING_CARS.find(c => c.id === manualCarId)?.name : "Search for target car..."}
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-accent/50 transition-all"
+                        value={carSearchQuery}
+                        onChange={(e) => {
+                            setCarSearchQuery(e.target.value);
+                            setShowCarPicker(true);
+                        }}
+                        onFocus={() => setShowCarPicker(true)}
+                    />
+                    
+                    {showCarPicker && carSearchQuery && (
+                        <div className="absolute bottom-full left-0 w-full mb-2 bg-panel border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50">
+                            {IRACING_CARS.filter(c => c.name.toLowerCase().includes(carSearchQuery.toLowerCase())).map(car => (
+                                <div 
+                                    key={car.id}
+                                    onClick={() => {
+                                        setManualCarId(car.id);
+                                        setCarSearchQuery(car.name);
+                                        setShowCarPicker(false);
+                                    }}
+                                    className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-accent/20 cursor-pointer"
+                                >
+                                    {car.name}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2 px-1">
+                    <HardDrive size={12} className="text-gray-600" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Active Path:</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-accent truncate max-w-[120px]">
+                        {getTargetCarId() || "None Detected"}
                     </span>
                 </div>
             </div>
-            
-            {!activeCarPath && (
-                 <div className="bg-status-warning/10 border border-status-warning/30 p-4 rounded-xl flex items-center gap-3 animate-pulse">
+
+            {!activeCarPath && !manualCarId && (
+                 <div 
+                    className="bg-status-warning/10 border border-status-warning/30 p-4 rounded-xl flex items-center gap-3 animate-pulse"
+                    onClick={(e) => e.stopPropagation()}
+                 >
                     <AlertTriangle size={16} className="text-status-warning shrink-0" />
                     <p className="text-[9px] font-bold uppercase tracking-widest text-status-warning/90 mt-0.5">
-                       Simulator Disconnected. Active directory mapping disabled. Application will gracefully prompt for folder name upon next manual deployment.
+                       Simulator Disconnected. Setup target unknown. Please manually select a car above to enable deployment.
                     </p>
                  </div>
             )}
@@ -292,6 +373,8 @@ const SetupCenter: React.FC<SetupCenterProps> = ({ setups, activeTeam, session, 
                                         <h4 className="text-sm font-black uppercase text-white/90 tracking-wider mb-1">{setup.fileName}</h4>
                                         <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-gray-500">
                                             <span>Author: <span className="text-[#ffb000]">{setup.author}</span></span>
+                                            <span>•</span>
+                                            <span className="text-blue-400">{setup.targetCar || 'Generic Car'}</span>
                                             <span>•</span>
                                             <span 
                                                 className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors min-h-[24px]"

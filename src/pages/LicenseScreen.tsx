@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Shield, AlertTriangle, CheckCircle, Hardware, Lock } from 'lucide-react';
+import { Key, Shield, AlertTriangle, CheckCircle, Cpu, Lock } from 'lucide-react';
 import { useLicense } from '../hooks/useLicense';
 
-const LicenseScreen = () => {
-  const { activate, error, machineId } = useLicense();
+interface LicenseScreenProps {
+  onActivate: (key: string) => Promise<boolean>;
+  machineId: string | null;
+  licenseError: string | null;
+}
+
+const LicenseScreen: React.FC<LicenseScreenProps> = ({ onActivate, machineId, licenseError }) => {
   const [key, setKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const error = localError || licenseError;
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!key.trim() || isActivating) return;
 
+    setLocalError(null);
     setIsActivating(true);
-    const result = await activate(key.toUpperCase().trim());
+    const result = await onActivate(key.toUpperCase().trim());
     setIsActivating(false);
     
     if (result) {
       setSuccess(true);
-      // Let the success state show for a moment before App.tsx re-renders and hides this screen
     }
   };
 
@@ -120,7 +128,7 @@ const LicenseScreen = () => {
 
         <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 text-[10px] text-white/20 font-mono uppercase">
-            <Hardware className="w-3 h-3" />
+            <Cpu className="w-3 h-3" />
             Hardware ID: {machineId || 'Detecting...'}
           </div>
           <p className="text-[10px] text-white/20 text-center leading-relaxed">
