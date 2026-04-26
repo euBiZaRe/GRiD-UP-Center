@@ -203,6 +203,34 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
     return entry ? entry[0] : undefined;
   }, [watchedDriver, telemetry?.drivers]);
 
+  // Check for inactive session (sid === -1 or missing)
+  if (activeTelemetry.sid === -1) {
+    return (
+      <div className="h-full flex items-center justify-center p-8 animate-reveal">
+        <div className="platinum-glass p-16 rounded-[48px] max-w-xl w-full text-center border-white/5 shadow-2xl relative overflow-hidden group">
+           <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+           <div className="relative z-10">
+              <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 animate-pulse shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                 <Activity size={40} className="text-white/20" />
+              </div>
+              <h1 className="text-3xl font-black italic mb-4 tracking-tighter">GRID <span className="text-accent underline">UP</span></h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-8">Performance Center // Engine Offline</p>
+              
+              <div className="space-y-4">
+                 <div className="flex items-center justify-center gap-3 py-4 px-6 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="w-2 h-2 rounded-full bg-status-warning animate-ping" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Waiting for iRacing Connection...</span>
+                 </div>
+                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                    Start the simulator to begin live telemetry acquisition and synchronization.
+                 </p>
+              </div>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 h-full flex flex-col gap-8 animate-reveal overflow-y-auto">
       {/* Header Info */}

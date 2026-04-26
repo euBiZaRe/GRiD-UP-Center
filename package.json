@@ -1,7 +1,7 @@
 {
-  "name": "grid-up-performance-center",
-  "version": "1.3.8",
-  "description": "GRiD UP Performance Center",
+  "name": "grid-up",
+  "version": "1.3.9",
+  "description": "GRiD UP",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
@@ -41,8 +41,8 @@
     "tailwindcss": "^4.2.2"
   },
   "build": {
-    "appId": "com.gridup.teamapp",
-    "productName": "GRiD UP Performance Center",
+    "appId": "com.gridup.app",
+    "productName": "GRiD UP",
     "directories": {
       "output": "dist_electron"
     },
@@ -71,7 +71,7 @@
         "nsis"
       ],
       "icon": "assets/icons/icon.png",
-      "artifactName": "GRiD UP Performance Center.${ext}"
+      "artifactName": "GRiD UP.${ext}"
     },
     "nsis": {
       "oneClick": true,
@@ -80,8 +80,8 @@
       "allowElevation": false,
       "installerIcon": "assets/icons/app.ico",
       "uninstallerIcon": "assets/icons/app.ico",
-      "shortcutName": "Grid Up Performance Center",
-      "artifactName": "GRiD UP Performance Center.${ext}"
+      "shortcutName": "Grid Up",
+      "artifactName": "GRiD UP.${ext}"
     },
     "asar": true,
     "publish": [
