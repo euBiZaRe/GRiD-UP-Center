@@ -70,13 +70,13 @@ export const drawDrivers = (
   calculatePositions: any,
   driverCircleSize: number,
   playerCircleSize: number,
-  visibleClasses: Set<number>
+  hiddenClasses: Set<number>
 ) => {
   Object.values(calculatePositions)
     .sort((a: any, b: any) => Number(a.isPlayer) - Number(b.isPlayer))
     .forEach(({ driver, position, isPlayer, classId }: any) => {
-      // Filtering
-      if (visibleClasses.size > 0 && !visibleClasses.has(classId)) return;
+      // Filtering: If this class is explicitly hidden, skip drawing
+      if (hiddenClasses.has(classId)) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       

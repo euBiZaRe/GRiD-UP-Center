@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electron', {
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
   getTrackData: (trackId) => ipcRenderer.invoke('get-track-data', trackId),
   getMachineId: () => ipcRenderer.invoke('get-machine-id'),
+  sendCommand: (cmd) => ipcRenderer.send('bridge-command', cmd),
 });

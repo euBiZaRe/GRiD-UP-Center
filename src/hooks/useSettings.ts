@@ -5,12 +5,29 @@ export type TempUnit = 'C' | 'F';
 export type PressUnit = 'PSI' | 'BAR' | 'KPA';
 export type LiquidUnit = 'L' | 'GAL';
 
+export interface GridTheme {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export const PRESET_THEMES: GridTheme[] = [
+  { id: 'CYBERPUNK', name: 'Cyberpunk', color: '#00e5ff' },
+  { id: 'EMERALD', name: 'Emerald', color: '#00ff88' },
+  { id: 'VULCAN', name: 'Vulcan', color: '#ff4d00' },
+  { id: 'ROYAL', name: 'Royal', color: '#be00ff' },
+  { id: 'GHOST', name: 'Ghost', color: '#ffffff' },
+  { id: 'CUSTOM', name: 'Custom', color: '#888888' }
+];
+
 export interface GridSettings {
   speedUnit: SpeedUnit;
   tempUnit: TempUnit;
   pressUnit: PressUnit;
   liquidUnit: LiquidUnit;
   driverName: string;
+  theme: string;
+  customColor: string;
 }
 
 const DEFAULT_SETTINGS: GridSettings = {
@@ -18,7 +35,9 @@ const DEFAULT_SETTINGS: GridSettings = {
   tempUnit: 'C',
   pressUnit: 'PSI',
   liquidUnit: 'L',
-  driverName: ''
+  driverName: '',
+  theme: 'CYBERPUNK',
+  customColor: '#00e5ff'
 };
 
 export const useSettings = () => {
@@ -60,7 +79,8 @@ export const useSettings = () => {
   };
 
   // Helper functions for easy conversion rendering
-  const convertSpeed = (kmh: number) => {
+  const convertSpeed = (ms: number) => {
+    const kmh = ms * 3.6;
     if (settings.speedUnit === 'MPH') return Math.round(kmh * 0.621371);
     return Math.round(kmh);
   };
@@ -70,17 +90,15 @@ export const useSettings = () => {
     return Number(celsius.toFixed(decimals));
   };
 
-  const convertPress = (psi: number, decimals = 1) => {
-    // Note: Python bridge currently extracts pressures naturally in PSI for health (because wait, it was pulling raw. Actually wait, LFcoldPressure usually passes KPa raw from iRacing, but maybe python is converting it? Let's assume bridge exports PSI right now based on our previous discussions, or if it's KPa natively, we can assume base is PSI if it's round(get_safe...) wait. Let's assume the base is PSI for now, we will verify.)
-    // Actually, in `bridge.py` I used `LFcoldPressure`, which in iRacing is KPa.
-    // If base is KPa:
-    const baseKpa = psi; // Assuming bridge exports KPa. Let's rename parameter internally to base
-    if (settings.pressUnit === 'PSI') return Number((baseKpa * 0.145038).toFixed(decimals));
-    if (settings.pressUnit === 'BAR') return Number((baseKpa / 100).toFixed(decimals));
-    return Number(baseKpa.toFixed(decimals)); // KPA
+  const convertPress = (kpa: number, decimals = 1) => {
+    // iRacing sends pressures in KPa
+    if (settings.pressUnit === 'PSI') return Number((kpa * 0.145038).toFixed(decimals));
+    if (settings.pressUnit === 'BAR') return Number((kpa / 100).toFixed(decimals));
+    return Number(kpa.toFixed(decimals)); // KPA
   };
 
   const convertLiquid = (litres: number, decimals = 1) => {
+    // iRacing sends fuel in Litres
     if (settings.liquidUnit === 'GAL') return Number((litres * 0.264172).toFixed(decimals));
     return Number(litres.toFixed(decimals));
   };
