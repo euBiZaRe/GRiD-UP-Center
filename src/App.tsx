@@ -13,7 +13,7 @@ import {
   Square
 } from 'lucide-react';
 
-const APP_VERSION = '1.5.4';
+const APP_VERSION = '1.5.5';
 import { useFirebase } from './hooks/useFirebase';
 import { db } from './hooks/useFirebase';
 import { ref, set, update } from 'firebase/database';
