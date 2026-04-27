@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Filter, Map as MapIcon, Activity, Eye, ArrowLeft, Trophy, Timer, FastForward, Gauge, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Shield, Filter, Map as MapIcon, Activity, Eye, ArrowLeft, Trophy, Timer, FastForward, Gauge, ArrowUpCircle, ArrowDownCircle, ShieldAlert } from 'lucide-react';
 import { useSettings } from '../hooks/useSettings';
 import { TrackCanvas } from '../components/TrackMap/TrackCanvas';
 import { TelemetryGraph } from '../components/TelemetryGraph';
@@ -165,6 +165,58 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
   }, []);
 
   const activeTelemetry = watchedDriver ? interpolatedTelemetry : telemetry;
+
+  // Incident Tracking Logic (Live Feed)
+  const [incidentLogs, setIncidentLogs] = useState<any[]>([]);
+  const prevIncCount = useRef<number | null>(null);
+  const prevSurface = useRef<number | null>(null);
+  const currentDriverId = watchedDriver?.id || 'local';
+
+  // Reset logs when switching drivers
+  useEffect(() => {
+    setIncidentLogs([]);
+    prevIncCount.current = null;
+    prevSurface.current = null;
+  }, [currentDriverId]);
+
+  useEffect(() => {
+    if (!watchedDriver || !activeTelemetry) return;
+
+    const newLogs: any[] = [];
+    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const currentIncs = activeTelemetry.incidents || 0;
+
+    // 1. Detect Incident Point Changes
+    if (prevIncCount.current !== null && currentIncs > prevIncCount.current) {
+      const delta = currentIncs - prevIncCount.current;
+      newLogs.push({
+        id: Date.now() + Math.random(),
+        time: timestamp,
+        type: 'INCIDENT',
+        info: `+${delta}x Points Detected`,
+        color: 'text-status-error'
+      });
+    }
+    prevIncCount.current = currentIncs;
+
+    // 2. Detect Off-Tracks (Surface Change)
+    // Surface 0 = Off Track in iRacing
+    const currentSurface = activeTelemetry.surface;
+    if (prevSurface.current !== null && prevSurface.current !== 0 && currentSurface === 0) {
+      newLogs.push({
+        id: Date.now() + Math.random(),
+        time: timestamp,
+        type: 'OFF-TRACK',
+        info: 'Vehicle Exited Track Limits',
+        color: 'text-status-warning'
+      });
+    }
+    prevSurface.current = currentSurface;
+
+    if (newLogs.length > 0) {
+      setIncidentLogs(prev => [...newLogs, ...prev].slice(0, 10));
+    }
+  }, [activeTelemetry?.incidents, activeTelemetry?.surface, watchedDriver]);
 
   const carClasses = useMemo(() => {
     if (!telemetry?.drivers) return [];
@@ -332,6 +384,47 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                     abs: activeTelemetry.abs || false
                 }} />
              </div>
+
+             {/* Observation-only Incident Console */}
+             {watchedDriver && (
+                <div className="border-t border-white/5 bg-black/20 p-6 animate-in slide-in-from-bottom duration-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert size={14} className="text-status-error" />
+                      <span className="text-[10px] font-black tracking-widest uppercase italic text-white/40">Intelligence Feed // Safety Audit</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black uppercase text-white/20">Total Incidents</span>
+                      <div className="px-3 py-1 rounded bg-status-error/10 border border-status-error/20">
+                        <span className="text-sm font-black italic text-status-error">{activeTelemetry.incidents || 0}x</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                    {incidentLogs.length === 0 ? (
+                      <div className="h-20 flex items-center justify-center border border-white/5 border-dashed rounded-xl bg-white/[0.02]">
+                        <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Awaiting Safety Events...</span>
+                      </div>
+                    ) : (
+                      <AnimatePresence initial={false}>
+                        {incidentLogs.map(log => (
+                          <motion.div
+                            key={log.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-center gap-4 p-2 rounded-lg bg-white/5 border border-white/5"
+                          >
+                            <span className="text-[9px] font-mono font-bold text-white/30">{log.time}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest w-20 ${log.color}`}>{log.type}</span>
+                            <span className="text-[10px] font-bold text-white/80">{log.info}</span>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    )}
+                  </div>
+                </div>
+              )}
              
              <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-accent/5 blur-[80px] rounded-full pointer-events-none" />
           </div>

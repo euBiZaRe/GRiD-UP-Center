@@ -1,6 +1,6 @@
 {
   "name": "grid-up",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "description": "GRiD UP",
   "main": "electron/main.js",
   "type": "module",
