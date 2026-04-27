@@ -16,6 +16,8 @@ export const useLicense = () => {
   const [isValidated, setIsValidated] = useState<boolean | null>(null); // null means checking
   const [error, setError] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
+  const didCheckRef = useRef(false);
+
 
   // 1. Fetch Machine ID on mount
   useEffect(() => {
@@ -100,7 +102,8 @@ export const useLicense = () => {
 
   // Initial check
   useEffect(() => {
-    if (machineId) {
+    if (machineId && !didCheckRef.current) {
+      didCheckRef.current = true;
       validateLicense();
     }
   }, [machineId, validateLicense]);

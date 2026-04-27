@@ -13,7 +13,7 @@ import {
   Square
 } from 'lucide-react';
 
-const APP_VERSION = '1.4.5';
+const APP_VERSION = '1.4.6';
 import { useFirebase } from './hooks/useFirebase';
 import { db } from './hooks/useFirebase';
 import { ref, set, update } from 'firebase/database';
@@ -146,6 +146,7 @@ const AppContent = () => {
 
   const handleInstallUpdate = () => window.electron?.send('install-update');
 
+
   useEffect(() => {
     if (machineId && window.electron?.sendCommand) {
        window.electron.sendCommand({ action: 'set_mid', mid: machineId });
@@ -161,19 +162,8 @@ const AppContent = () => {
     }
   }, [activeTeam]);
 
-  useEffect(() => {
-    if (activeTeam && telemetry?.sid && telemetry.sid !== -1 && db && history) {
-      if (!history[telemetry.sid] || !history[telemetry.sid].metadata) {
-        const metaRef = ref(db, `teams/${activeTeam}/history/${telemetry.sid}/metadata`);
-        update(metaRef, {
-          trackName: session?.trackName || 'Live Session',
-          carName: 'Active Vehicle',
-          startTime: Date.now(),
-          sessionId: telemetry.sid
-        }).catch(console.error);
-      }
-    }
-  }, [activeTeam, telemetry?.sid, history, db, session?.trackName]);
+  // Note: History metadata update moved to bridge.py to avoid UI render loops
+
 
   if (isValidated === null) return <PremiumLoader text="SECURITY HANDSHAKE" />;
   if (isValidated === false && !isInitialLoad) return <LicenseScreen onActivate={activate} machineId={machineId} licenseError={licenseError} />;
