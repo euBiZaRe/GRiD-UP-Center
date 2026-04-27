@@ -27,22 +27,32 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
                 const delta = currentIncs - prev;
                 const isPlayer = driver.isPlayer;
                 
-                // Add an entry for EACH point if they want them separate?
-                // Actually, usually a 4x is one event. If we show "+4x" it's one line.
-                // But if we want them "separate", maybe we should show them as individual notifications if they happen in blocks?
-                // The user said "show all incidents separately not combine them".
-                // I'll stick to one log per "event" (delta change), which is standard.
+                let typeStr = isPlayer ? '[TEAM INCIDENT]' : '[INCIDENT]';
+                let infoStr = `+${delta}x Incident Points`;
+                let severityStr = isPlayer ? 'error' : 'warning';
+
+                if (delta === 1) {
+                    typeStr = isPlayer ? '[TEAM OFF-TRACK]' : '[OFF-TRACK]';
+                    infoStr = 'Vehicle Exited Track Limits';
+                } else if (delta === 2) {
+                    typeStr = isPlayer ? '[TEAM CONTACT]' : '[CONTACT]';
+                    infoStr = 'Light Contact Detected';
+                } else if (delta === 4) {
+                    typeStr = isPlayer ? '[TEAM COLLISION]' : '[COLLISION]';
+                    infoStr = 'Major Contact / Impact';
+                    severityStr = 'error';
+                }
                 
                 newLogs.unshift({
                     id: Date.now() + Math.random(),
                     time: timestamp,
-                    type: isPlayer ? '[TEAM INCIDENT]' : '[INCIDENT]',
-                    severity: isPlayer ? 'error' : 'warning',
-                    info: `+${delta}x Incident Points`,
+                    type: typeStr,
+                    severity: severityStr,
+                    info: infoStr,
                     driver: driver.name,
                     carNum: driver.carNum,
-                    lap: telemetry.lap || 0,
-                    sessionTime: telemetry.session_time || null
+                    lap: telemetry?.lap || 0,
+                    sessionTime: telemetry?.session_time || null
                 });
                 prevIncs.current[idx] = currentIncs;
             }
@@ -74,6 +84,20 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
 
   }, [telemetry]);
 
+  if (!telemetry || !session) {
+    return (
+        <div className="h-full flex items-center justify-center p-8 animate-reveal">
+          <div className="platinum-glass p-16 rounded-[48px] max-w-xl w-full text-center border-white/5 shadow-2xl relative overflow-hidden group">
+             <div className="relative z-10 flex flex-col items-center">
+                <AlertCircle size={40} className="text-white/20 mb-6 animate-pulse" />
+                <h1 className="text-2xl font-black italic mb-2 tracking-tighter uppercase text-white/40">Synchronizing Race Control</h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Establishing Command Link...</p>
+             </div>
+          </div>
+        </div>
+    );
+  }
+
   const handleJump = (carNum: string | number, sessionTime?: number | null) => {
       if (window.electron && window.electron.sendCommand) {
           window.electron.sendCommand({
@@ -92,8 +116,8 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
           <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
               <span className="data-label opacity-40 mb-2">Total Incident Points</span>
               <div className="flex items-baseline gap-2">
-                  <span className={`text-4xl font-black italic ${(telemetry.incidents || 0) >= 12 ? 'text-status-error' : 'text-white'}`}>
-                      {telemetry.incidents || 0}
+                  <span className={`text-4xl font-black italic ${(telemetry?.incidents || 0) >= 12 ? 'text-status-error' : 'text-white'}`}>
+                      {telemetry?.incidents || 0}
                   </span>
                   <span className="text-xs font-black text-white/20 uppercase">x Points</span>
               </div>
@@ -102,14 +126,14 @@ const RaceControl: React.FC<RaceControlProps> = ({ telemetry, session }) => {
           <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
               <span className="data-label opacity-40 mb-2">Active Lap</span>
               <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black italic text-accent">L{telemetry.lap || 1}</span>
+                  <span className="text-4xl font-black italic text-accent">L{telemetry?.lap || 1}</span>
               </div>
           </div>
 
           <div className="card p-6 border-white/5 bg-panel/20 flex flex-col justify-between">
               <span className="data-label opacity-40 mb-2">Class Position</span>
               <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black italic text-white">P{telemetry.position || '--'}</span>
+                  <span className="text-4xl font-black italic text-white">P{telemetry?.position || '--'}</span>
               </div>
           </div>
       </div>
