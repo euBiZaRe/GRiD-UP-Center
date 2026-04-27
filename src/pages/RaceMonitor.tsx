@@ -123,7 +123,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
   const lastSidRef = useRef<number | null>(null);
 
   // High-Precision Interpolation (HPTI) Engine
-  const [interpolatedTelemetry, setInterpolatedTelemetry] = useState(telemetry || { rpm: 0, speed: 0, throttle: 0, brake: 0 });
+  const [interpolatedTelemetry, setInterpolatedTelemetry] = useState(telemetry || { rpm: 0, speed: 0, throttle: 0, brake: 0, steering: 0, gear: 'N' });
   const targetRef = useRef(telemetry);
 
   useEffect(() => {
@@ -143,18 +143,17 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
     const lerp = (start: number, end: number, t: number) => start + (end - start) * t;
 
     const update = () => {
-        setInterpolatedTelemetry((prev: any) => {
+        setInterpolatedTelemetry(prev => {
             const target = targetRef.current;
             if (!target) return prev;
-            const alpha = 0.12; // Adjusted for snappy yet premium feel
-            
             return {
-                ...target,
-                rpm: lerp(prev.rpm ?? 0, target.rpm ?? 0, alpha),
-                speed: lerp(prev.speed ?? 0, target.speed ?? 0, alpha),
-                throttle: lerp(prev.throttle ?? 0, target.throttle ?? 0, alpha),
-                brake: lerp(prev.brake ?? 0, target.brake ?? 0, alpha),
-                brake_applied: lerp(prev.brake_applied ?? 0, target.brake_applied ?? 0, alpha),
+                rpm: lerp(prev.rpm || 0, target.rpm || 0, 0.4),
+                speed: lerp(prev.speed || 0, target.speed || 0, 0.4),
+                throttle: lerp(prev.throttle || 0, target.throttle || 0, 0.4),
+                brake: lerp(prev.brake || 0, target.brake || 0, 0.4),
+                steering: lerp(prev.steering || 0, target.steering || 0, 0.6), // Slightly faster for responsiveness
+                brake_applied: lerp(prev.brake_applied ?? 0, target.brake_applied ?? 0, 0.12),
+                gear: target.gear
             };
         });
         rafId = requestAnimationFrame(update);
@@ -385,11 +384,53 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                     <Activity size={16} className="text-white/10" />
                 </div>
                 
-                <div className="flex flex-col gap-6 h-full justify-center">
-                   <div className="flex items-center justify-center">
-                      <SpeedReadout telemetry={activeTelemetry || {}} settings={settings} convertSpeed={convertSpeed} />
-                   </div>
-                </div>
+                 <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
+                    <div className="relative">
+                        {/* Interactive Steering Wheel */}
+                        <motion.div 
+                            className="relative w-72 h-72 flex items-center justify-center"
+                            style={{ perspective: '1000px' }}
+                        >
+                            {/* Wheel Image */}
+                            <motion.img 
+                                src="/steering_wheel.png" 
+                                className="w-full h-full object-contain pointer-events-none drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+                                animate={{ rotate: -(interpolatedTelemetry?.steering || 0) * (180 / Math.PI) }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.8 }}
+                            />
+
+                            {/* Digital Dash Screen Overlay (Positioned for standard GT3 wheel center) */}
+                            <div className="absolute top-[40%] left-[34%] w-[32%] h-[18%] bg-black/90 rounded-[2px] flex flex-col items-center justify-center border border-white/10 shadow-[inset_0_0_10px_rgba(255,255,255,0.05)] overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/[0.02] pointer-events-none" />
+                                
+                                <span className="text-3xl font-black italic leading-none text-white tracking-tighter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                                    {interpolatedTelemetry?.gear === 0 ? 'N' : interpolatedTelemetry?.gear === -1 ? 'R' : interpolatedTelemetry?.gear || 'N'}
+                                </span>
+                                
+                                <div className="flex items-baseline gap-1 mt-0.5">
+                                    <span className="text-[11px] font-black text-accent tracking-tighter">
+                                        {Math.round(convertSpeed(interpolatedTelemetry?.speed || 0))}
+                                    </span>
+                                    <span className="text-[6px] font-bold text-gray-600 uppercase tracking-widest">
+                                        {settings.speedUnit}
+                                    </span>
+                                </div>
+
+                                {/* Shift Light Glow (Simulated) */}
+                                {interpolatedTelemetry?.rpm > 7000 && (
+                                    <div className="absolute top-0 left-0 w-full h-0.5 bg-accent shadow-[0_0_10px_rgba(0,229,255,1)] animate-pulse" />
+                                )}
+                            </div>
+                        </motion.div>
+
+                        {/* Ambient Shadow/Glow under wheel */}
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-48 h-8 bg-accent/5 blur-3xl rounded-full -z-10" />
+                    </div>
+
+                    <div className="mt-4 flex flex-col items-center">
+                        <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/10">Active Rotation Sync</span>
+                    </div>
+                 </div>
              </div>
           </div>
 
