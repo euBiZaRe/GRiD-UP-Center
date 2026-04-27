@@ -220,7 +220,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
 
     // 2. Detect Off-Tracks (Surface Change - Independent of points)
     // Only log if points didn't already cover it (to avoid double entry)
-    const currentSurface = activeTelemetry.surface;
+    const currentSurface = activeTelemetry?.surface;
     const pointsChanged = prevIncCount.current !== null && currentIncs > (prevIncCount.current || 0);
     
     if (prevSurface.current !== null && prevSurface.current !== 0 && currentSurface === 0 && !pointsChanged) {
