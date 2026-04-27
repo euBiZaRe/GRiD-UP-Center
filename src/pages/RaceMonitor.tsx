@@ -410,9 +410,11 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
 
           {/* Dynamic Analysis Hub */}
           <div className="card overflow-hidden border-white/5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 pb-4">
-                 <TelemetryGauge telemetry={interpolatedTelemetry} springConfig={springConfig} />
-                 <div className="flex items-center justify-center bg-black/20 rounded-2xl border border-white/5 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 p-8 pb-4">
+                 <div className="md:col-span-9">
+                    <TelemetryGauge telemetry={interpolatedTelemetry} springConfig={springConfig} />
+                 </div>
+                 <div className="md:col-span-3 flex items-center justify-center bg-black/20 rounded-2xl border border-white/5 py-4 self-center">
                     <SteeringWheel telemetry={interpolatedTelemetry} />
                  </div>
               </div>
