@@ -106,10 +106,10 @@ const SpeedReadout = React.memo(({ telemetry, settings, convertSpeed }: any) => 
   </div>
 ));
 
-const SteeringWheel = React.memo(({ telemetry, convertSpeed, settings }: any) => (
+const SteeringWheel = React.memo(({ telemetry }: any) => (
   <div className="relative">
       <motion.div 
-          className="relative w-48 h-48 flex items-center justify-center"
+          className="relative w-28 h-28 flex items-center justify-center"
           style={{ perspective: '1000px' }}
       >
           {/* Wheel Image */}
@@ -119,21 +119,6 @@ const SteeringWheel = React.memo(({ telemetry, convertSpeed, settings }: any) =>
               animate={{ rotate: -(telemetry?.steering || 0) * (180 / Math.PI) }}
               transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.8 }}
           />
-
-          {/* Digital Dash Screen Overlay */}
-          <div className="absolute top-[40%] left-[34%] w-[32%] h-[18%] bg-black/95 rounded-[1px] flex flex-col items-center justify-center border border-white/5 overflow-hidden">
-              <span className="text-xl font-black italic leading-none text-white tracking-tighter">
-                  {telemetry?.gear === 0 ? 'N' : telemetry?.gear === -1 ? 'R' : telemetry?.gear || 'N'}
-              </span>
-              <div className="flex items-baseline gap-1">
-                  <span className="text-[8px] font-black text-accent tracking-tighter">
-                      {Math.round(convertSpeed(telemetry?.speed || 0))}
-                  </span>
-                  <span className="text-[5px] font-bold text-gray-600 uppercase">
-                      {settings.speedUnit}
-                  </span>
-              </div>
-          </div>
       </motion.div>
   </div>
 ));
@@ -428,7 +413,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 pb-4">
                  <TelemetryGauge telemetry={interpolatedTelemetry} springConfig={springConfig} />
                  <div className="flex items-center justify-center bg-black/20 rounded-2xl border border-white/5 py-4">
-                    <SteeringWheel telemetry={interpolatedTelemetry} convertSpeed={convertSpeed} settings={settings} />
+                    <SteeringWheel telemetry={interpolatedTelemetry} />
                  </div>
               </div>
              
