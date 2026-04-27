@@ -186,28 +186,49 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
     const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
     const currentIncs = activeTelemetry.incidents || 0;
 
-    // 1. Detect Incident Point Changes
+    // 1. Detect Incident Point Changes (with Intelligent Classification)
     if (prevIncCount.current !== null && currentIncs > prevIncCount.current) {
       const delta = currentIncs - prevIncCount.current;
+      
+      let typeStr = 'INCIDENT';
+      let infoStr = `+${delta}x Points Detected`;
+      let colorStr = 'text-status-error';
+
+      if (delta === 1) {
+        typeStr = 'OFF-TRACK';
+        infoStr = 'Vehicle Exited Track Limits';
+        colorStr = 'text-status-warning';
+      } else if (delta === 2) {
+        typeStr = 'CONTACT';
+        infoStr = 'Light Contact Detected';
+        colorStr = 'text-[#ffb000]';
+      } else if (delta === 4) {
+        typeStr = 'COLLISION';
+        infoStr = 'Major Contact / Impact';
+        colorStr = 'text-status-error';
+      }
+
       newLogs.push({
         id: Date.now() + Math.random(),
         time: timestamp,
-        type: 'INCIDENT',
-        info: `+${delta}x Points Detected`,
-        color: 'text-status-error'
+        type: typeStr,
+        info: infoStr,
+        color: colorStr
       });
     }
     prevIncCount.current = currentIncs;
 
-    // 2. Detect Off-Tracks (Surface Change)
-    // Surface 0 = Off Track in iRacing
+    // 2. Detect Off-Tracks (Surface Change - Independent of points)
+    // Only log if points didn't already cover it (to avoid double entry)
     const currentSurface = activeTelemetry.surface;
-    if (prevSurface.current !== null && prevSurface.current !== 0 && currentSurface === 0) {
+    const pointsChanged = prevIncCount.current !== null && currentIncs > (prevIncCount.current || 0);
+    
+    if (prevSurface.current !== null && prevSurface.current !== 0 && currentSurface === 0 && !pointsChanged) {
       newLogs.push({
         id: Date.now() + Math.random(),
         time: timestamp,
-        type: 'OFF-TRACK',
-        info: 'Vehicle Exited Track Limits',
+        type: 'TRACK LIMITS',
+        info: '4-Wheel Off-Track Detected',
         color: 'text-status-warning'
       });
     }
@@ -243,20 +264,21 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
     return { last, best };
   }, [telemetry?.lap_history]);
 
-  if (!activeTelemetry || isSyncing) {
-    return <PremiumLoader text={isSyncing ? "TRANSITIONING" : "CONNECTING"} />;
-  }
-
-  const springConfig = { stiffness: 150, damping: 25, mass: 1 };
-
   const observedIdx = useMemo(() => {
     if (!watchedDriver || !telemetry?.drivers) return undefined;
     const entry = Object.entries(telemetry.drivers).find(([_, d]: [string, any]) => d.carNum === watchedDriver.carNum);
     return entry ? entry[0] : undefined;
   }, [watchedDriver, telemetry?.drivers]);
 
+  const springConfig = { stiffness: 150, damping: 25, mass: 1 };
+
+  if (!activeTelemetry || isSyncing) {
+    return <PremiumLoader text={isSyncing ? "TRANSITIONING" : "CONNECTING"} />;
+  }
+
   // Check for inactive session (sid === -1 or missing)
   if (activeTelemetry.sid === -1) {
+
     return (
       <div className="h-full flex items-center justify-center p-8 animate-reveal">
         <div className="platinum-glass p-16 rounded-[48px] max-w-xl w-full text-center border-white/5 shadow-2xl relative overflow-hidden group">
@@ -334,8 +356,8 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                 </div>
                 
                 <div className="grid grid-cols-2 gap-y-8">
-                    <IntelligenceCard label="Position" value={`P${activeTelemetry.position || '--'}`} icon={Trophy} colorClass="text-accent" />
-                    <IntelligenceCard label="Lap" value={activeTelemetry.lap || '0'} icon={FastForward} />
+                    <IntelligenceCard label="Position" value={`P${activeTelemetry?.position || '--'}`} icon={Trophy} colorClass="text-accent" />
+                    <IntelligenceCard label="Lap" value={activeTelemetry?.lap || '0'} icon={FastForward} />
                     <IntelligenceCard label="Personal Best" value={times.best} icon={Gauge} colorClass="text-accent/60" />
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -345,11 +367,11 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-status-success uppercase opacity-40">Ahead</span>
-                                <span className="text-lg font-black italic text-status-success leading-none">{activeTelemetry.gap_ahead || '--'}</span>
+                                <span className="text-lg font-black italic text-status-success leading-none">{activeTelemetry?.gap_ahead || '--'}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-status-error uppercase opacity-40">Behind</span>
-                                <span className="text-lg font-black italic text-status-error leading-none">{activeTelemetry.gap_behind || '--'}</span>
+                                <span className="text-lg font-black italic text-status-error leading-none">{activeTelemetry?.gap_behind || '--'}</span>
                             </div>
                         </div>
                     </div>
@@ -365,7 +387,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                 
                 <div className="flex flex-col gap-6 h-full justify-center">
                    <div className="flex items-center justify-center">
-                      <SpeedReadout telemetry={activeTelemetry} settings={settings} convertSpeed={convertSpeed} />
+                      <SpeedReadout telemetry={activeTelemetry || {}} settings={settings} convertSpeed={convertSpeed} />
                    </div>
                 </div>
              </div>
@@ -374,19 +396,19 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
           {/* Dynamic Analysis Hub */}
           <div className="card overflow-hidden border-white/5">
              <div className="p-8 pb-4">
-                <TelemetryGauge telemetry={activeTelemetry} springConfig={springConfig} />
+                <TelemetryGauge telemetry={activeTelemetry || {}} springConfig={springConfig} />
              </div>
              
              <div className="h-[140px] premium-scanline border-t border-white/5 bg-white/[0.01]">
                 <TelemetryGraph data={{
-                    throttle: activeTelemetry.throttle,
-                    brake: activeTelemetry.brake,
-                    abs: activeTelemetry.abs || false
+                    throttle: activeTelemetry?.throttle || 0,
+                    brake: activeTelemetry?.brake || 0,
+                    abs: activeTelemetry?.abs || false
                 }} />
-             </div>
+              </div>
 
-             {/* Observation-only Incident Console */}
-             {watchedDriver && (
+              {/* Observation-only Incident Console */}
+              {watchedDriver && (
                 <div className="border-t border-white/5 bg-black/20 p-6 animate-in slide-in-from-bottom duration-700">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -396,7 +418,7 @@ const RaceMonitor: React.FC<RaceMonitorProps> = ({ telemetry, session, watchedDr
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-black uppercase text-white/20">Total Incidents</span>
                       <div className="px-3 py-1 rounded bg-status-error/10 border border-status-error/20">
-                        <span className="text-sm font-black italic text-status-error">{activeTelemetry.incidents || 0}x</span>
+                        <span className="text-sm font-black italic text-status-error">{activeTelemetry?.incidents || 0}x</span>
                       </div>
                     </div>
                   </div>
